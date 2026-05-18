@@ -14,7 +14,8 @@
 
 ## 📸 截图
 
-> 轻量、无干扰的桌面悬浮窗，后台静默追踪
+<img width="842" height="1264" alt="1779084503005-019e39b2-bd6a-7a93-933b-07b2080a3f22" src="https://github.com/user-attachments/assets/cef95b24-c216-42e6-a969-fae74c69193e" />
+
 
 ## 📥 下载安装
 
