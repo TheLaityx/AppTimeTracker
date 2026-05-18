@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>应用时长 - 界面预览</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; display:flex; align-items:center; justify-content:center;
+  gap: 32px; flex-wrap: wrap; padding: 40px 20px;
+  font-family: "Microsoft YaHei UI", "Segoe UI Variable", system-ui, sans-serif;
+}
+
+/* ===== CSS 变量 ===== */
+.window-light {
+  --bg-primary: rgba(243, 243, 243, 0.95);
+  --bg-secondary: rgba(255, 255, 255, 0.98);
+  --bg-tertiary: rgba(240, 240, 240, 0.95);
+  --bg-hover: rgba(0,0,0,0.04);
+  --text-primary: rgba(0,0,0,0.87);
+  --text-secondary: rgba(0,0,0,0.55);
+  --text-tertiary: rgba(0,0,0,0.35);
+  --accent: #0067C0;
+  --accent-hover: #0057A8;
+  --accent-bg: rgba(0,103,192,0.1);
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --bar-bg: rgba(0,0,0,0.07);
+  --scrollbar-bg: rgba(0,0,0,0.1);
+  --shadow: 0 24px 64px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.08);
+}
+.window-dark {
+  --bg-primary: rgba(32, 32, 32, 0.95);
+  --bg-secondary: rgba(45, 45, 45, 0.98);
+  --bg-tertiary: rgba(58, 58, 58, 0.9);
+  --bg-hover: rgba(255,255,255,0.06);
+  --text-primary: rgba(255,255,255,0.92);
+  --text-secondary: rgba(255,255,255,0.55);
+  --text-tertiary: rgba(255,255,255,0.35);
+  --accent: #60CDFF;
+  --accent-hover: #82D8FF;
+  --accent-bg: rgba(96,205,255,0.15);
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.14);
+  --bar-bg: rgba(255,255,255,0.08);
+  --scrollbar-bg: rgba(255,255,255,0.1);
+  --shadow: 0 24px 64px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ===== 窗口外壳 ===== */
+.window {
+  width: 400px;
+  height: 680px;
+  background: var(--bg-primary);
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 模拟亚克力/毛玻璃效果用渐变叠加 */
+.window::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(160deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+  pointer-events:none; border-radius:14px; z-index:0;
+}
+.window > * { position:relative; z-index:1; }
+
+/* ===== 标题栏 ===== */
+.titlebar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 4px;
+}
+.titlebar-icon { width:20px; height:20px; display:flex; align-items:center; margin-right:2px; }
+.titlebar-title { font-size:14px; font-weight:700; color:var(--text-primary); flex:0 0 auto; margin-right:8px; }
+.tab-group { display:flex; flex:1; gap:2px; }
+.tab {
+  flex:1; height:28px; border-radius:7px; border:none; background:transparent;
+  font-size:12px; color:var(--text-secondary); cursor:pointer; font-family:inherit; font-weight:500;
+}
+.tab.active { background:var(--accent-bg); color:var(--accent); font-weight:600; }
+.titlebar-btn {
+  width:32px; height:32px; border-radius:8px; border:none;
+  background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  color:var(--text-secondary);
+}
+.close-hover { background: #C42B1C; color: white !important; }
+
+/* ===== 内容区 ===== */
+.content { flex:1; overflow-y:auto; }
+.content::-webkit-scrollbar { width:3px; }
+.content::-webkit-scrollbar-thumb { background:var(--scrollbar-bg); border-radius:2px; }
+
+/* ===== 汇总栏 ===== */
+.summary-bar {
+  display:flex; align-items:center; padding:14px 16px;
+  border-bottom:1px solid var(--border);
+}
+.summary-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.summary-label { font-size:11px; color:var(--text-secondary); }
+.summary-value { font-size:16px; font-weight:700; color:var(--text-primary); }
+.summary-divider { width:1px; height:32px; background:var(--border-strong); }
+
+/* ===== 应用列表 ===== */
+.chart-section { padding: 10px 0 8px; }
+.chart-title { font-size:11px; color:var(--text-tertiary); padding:0 16px 8px; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; }
+.app-item {
+  display:flex; align-items:center; padding:9px 14px; gap:10px;
+}
+.app-item:hover { background: var(--bg-hover); }
+.app-rank { width:18px; font-size:11px; color:var(--text-tertiary); text-align:center; font-weight:700; }
+.app-item:nth-child(1) .app-rank { color:#FFB400; }
+.app-item:nth-child(2) .app-rank { color:#9E9E9E; }
+.app-item:nth-child(3) .app-rank { color:#CD7F32; }
+
+.app-icon { width:38px; height:38px; border-radius:10px; overflow:hidden; flex-shrink:0; }
+.app-info { flex:1; min-width:0; }
+.app-name { font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.app-bar-wrap { height:4px; background:var(--bar-bg); border-radius:2px; overflow:hidden; }
+.app-bar { height:100%; background:var(--accent); border-radius:2px; }
+.app-time { font-size:12px; font-weight:600; color:var(--text-secondary); flex-shrink:0; min-width:52px; text-align:right; }
+
+/* ===== 标签 ===== */
+.label-row { display:flex; align-items:center; padding:0 12px 12px; justify-content:center; gap:12px; flex-wrap:wrap; }
+.label { background: rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); padding:4px 12px; border-radius:20px; font-size:11px; }
+.label.dark { background:rgba(0,0,0,0.35); }
+
+/* ===== 设置页 ===== */
+.section { margin-top:16px; }
+.section-title { font-size:11px; color:var(--text-tertiary); padding:0 16px 8px; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; }
+.section > .setting-item { border-top:1px solid var(--border); }
+.section > .setting-item:last-child { border-bottom:1px solid var(--border); }
+.setting-item { display:flex; align-items:center; padding:13px 16px; gap:12px; background:var(--bg-secondary); }
+.setting-info { flex:1; }
+.setting-name { font-size:13px; font-weight:600; color:var(--text-primary); margin-bottom:2px; }
+.setting-desc { font-size:11px; color:var(--text-secondary); line-height:1.4; }
+
+.toggle { position:relative; display:inline-block; width:44px; height:24px; }
+.slider { position:absolute; inset:0; background:var(--bar-bg); border-radius:12px; border:1.5px solid var(--border-strong); }
+.slider:before { content:''; position:absolute; width:18px; height:18px; left:2px; top:50%; transform:translateY(-50%); background:var(--text-secondary); border-radius:50%; }
+.on .slider { background:var(--accent); border-color:var(--accent); }
+.on .slider:before { transform:translate(20px,-50%); background:white; }
+
+.badge { padding:3px 10px; background:var(--accent-bg); color:var(--accent); border-radius:20px; font-size:11px; font-weight:600; }
+.btn-ghost { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:6px; border:1px solid var(--border-strong); background:transparent; color:var(--text-primary); font-size:12px; cursor:pointer; }
+.btn-danger { padding:6px 12px; border-radius:6px; border:none; background:#C42B1C; color:white; font-size:12px; font-weight:600; }
+
+.about-card { display:flex; align-items:center; gap:14px; padding:16px; background:var(--bg-secondary); border-top:1px solid var(--border); }
+.about-name { font-size:15px; font-weight:700; color:var(--text-primary); }
+.about-ver { font-size:12px; color:var(--accent); margin:2px 0 4px; }
+.about-desc { font-size:11px; color:var(--text-secondary); }
+
+/* ===== 欢迎页 ===== */
+.welcome-body { flex:1; display:flex; flex-direction:column; align-items:center; padding:24px 24px 20px; gap:14px; overflow-y:auto; }
+.welcome-title { font-size:20px; font-weight:700; color:var(--text-primary); text-align:center; }
+.welcome-sub { font-size:13px; color:var(--text-secondary); text-align:center; margin-top:-8px; }
+.privacy-card { width:100%; background:var(--bg-secondary); border-radius:10px; border:1px solid var(--border); padding:14px; }
+.privacy-header { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:10px; }
+.privacy-list { list-style:none; display:flex; flex-direction:column; gap:7px; }
+.privacy-list li { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary); }
+.privacy-list strong { color:var(--text-primary); }
+.feature-row { display:flex; gap:10px; width:100%; }
+.feature-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 6px; background:var(--bg-secondary); border-radius:10px; border:1px solid var(--border); font-size:11px; color:var(--text-secondary); }
+.btn-primary { width:100%; height:40px; border-radius:8px; border:none; background:var(--accent); color:#fff; font-size:14px; font-weight:600; cursor:pointer; margin-top:2px; }
+.welcome-hint { font-size:11px; color:var(--text-tertiary); text-align:center; }
+
+.mode-label {
+  color: rgba(255,255,255,0.6); font-size:12px; text-align:center;
+  margin-bottom:8px; font-family:inherit;
+}
+</style>
+</head>
+<body>
+
+<!-- 浅色模式主页 -->
+<div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+  <div class="mode-label">☀️ 浅色模式 · 主界面</div>
+  <div class="window window-light">
+    <div class="titlebar">
+      <div class="titlebar-icon">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <rect width="20" height="20" rx="5" fill="#0067C0"/>
+          <rect x="4" y="5" width="12" height="2" rx="1" fill="rgba(255,255,255,0.9)"/>
+          <rect x="4" y="9" width="8" height="2" rx="1" fill="rgba(255,255,255,0.7)"/>
+          <rect x="4" y="13" width="5" height="2" rx="1" fill="rgba(255,255,255,0.5)"/>
+        </svg>
+      </div>
+      <div class="titlebar-title">应用时长</div>
+      <div class="tab-group">
+        <button class="tab active">近7天</button>
+        <button class="tab">近30天</button>
+      </div>
+      <div class="titlebar-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="rgba(0,0,0,0.5)" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="rgba(0,0,0,0.5)" stroke-width="2"/></svg>
+      </div>
+      <div class="titlebar-btn close-hover">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1L9 9M9 1L1 9" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="summary-bar">
+        <div class="summary-item">
+          <span class="summary-label">共追踪</span>
+          <span class="summary-value">12 款应用</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">累计使用</span>
+          <span class="summary-value">47时23分</span>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="chart-title">使用时长排行</div>
+
+        <!-- App 1 -->
+        <div class="app-item">
+          <div class="app-rank">1</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#4FC3F7"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">C</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Google Chrome</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:100%"></div></div>
+          </div>
+          <div class="app-time">18时42分</div>
+        </div>
+
+        <!-- App 2 -->
+        <div class="app-item">
+          <div class="app-rank">2</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#81C784"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">V</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">VS Code</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:76%"></div></div>
+          </div>
+          <div class="app-time">14时17分</div>
+        </div>
+
+        <!-- App 3 -->
+        <div class="app-item">
+          <div class="app-rank">3</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#FFB74D"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">微</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">微信</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:51%"></div></div>
+          </div>
+          <div class="app-time">9时33分</div>
+        </div>
+
+        <!-- App 4 -->
+        <div class="app-item">
+          <div class="app-rank">4</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#F06292"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">F</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Figma</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:38%"></div></div>
+          </div>
+          <div class="app-time">7时5分</div>
+        </div>
+
+        <!-- App 5 -->
+        <div class="app-item">
+          <div class="app-rank">5</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#BA68C8"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">网</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">网易云音乐</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:28%"></div></div>
+          </div>
+          <div class="app-time">5时14分</div>
+        </div>
+
+        <!-- App 6 -->
+        <div class="app-item">
+          <div class="app-rank">6</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#4DB6AC"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">D</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Discord</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:20%"></div></div>
+          </div>
+          <div class="app-time">3时46分</div>
+        </div>
+
+        <!-- App 7 -->
+        <div class="app-item">
+          <div class="app-rank">7</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#FF8A65"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">W</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Word</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:14%"></div></div>
+          </div>
+          <div class="app-time">2时38分</div>
+        </div>
+
+        <!-- App 8 -->
+        <div class="app-item">
+          <div class="app-rank">8</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#90A4AE"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">S</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Slack</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:10%"></div></div>
+          </div>
+          <div class="app-time">1时52分</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 深色模式主页 -->
+<div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+  <div class="mode-label">🌙 深色模式 · 主界面</div>
+  <div class="window window-dark">
+    <div class="titlebar">
+      <div class="titlebar-icon">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+          <rect width="20" height="20" rx="5" fill="#60CDFF"/>
+          <rect x="4" y="5" width="12" height="2" rx="1" fill="rgba(0,0,0,0.7)"/>
+          <rect x="4" y="9" width="8" height="2" rx="1" fill="rgba(0,0,0,0.5)"/>
+          <rect x="4" y="13" width="5" height="2" rx="1" fill="rgba(0,0,0,0.35)"/>
+        </svg>
+      </div>
+      <div class="titlebar-title">应用时长</div>
+      <div class="tab-group">
+        <button class="tab active">近7天</button>
+        <button class="tab">近30天</button>
+      </div>
+      <div class="titlebar-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="rgba(255,255,255,0.5)" stroke-width="2"/></svg>
+      </div>
+      <div class="titlebar-btn close-hover">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1L9 9M9 1L1 9" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="summary-bar">
+        <div class="summary-item">
+          <span class="summary-label">共追踪</span>
+          <span class="summary-value">12 款应用</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span class="summary-label">累计使用</span>
+          <span class="summary-value">47时23分</span>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="chart-title">使用时长排行</div>
+        <div class="app-item">
+          <div class="app-rank">1</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#4FC3F7"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">C</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Google Chrome</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:100%"></div></div>
+          </div>
+          <div class="app-time">18时42分</div>
+        </div>
+        <div class="app-item">
+          <div class="app-rank">2</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#81C784"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">V</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">VS Code</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:76%"></div></div>
+          </div>
+          <div class="app-time">14时17分</div>
+        </div>
+        <div class="app-item">
+          <div class="app-rank">3</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#FFB74D"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">微</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">微信</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:51%"></div></div>
+          </div>
+          <div class="app-time">9时33分</div>
+        </div>
+        <div class="app-item">
+          <div class="app-rank">4</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#F06292"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">F</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Figma</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:38%"></div></div>
+          </div>
+          <div class="app-time">7时5分</div>
+        </div>
+        <div class="app-item">
+          <div class="app-rank">5</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#BA68C8"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">网</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">网易云音乐</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:28%"></div></div>
+          </div>
+          <div class="app-time">5时14分</div>
+        </div>
+        <div class="app-item">
+          <div class="app-rank">6</div>
+          <div class="app-icon"><svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg"><rect width="38" height="38" rx="10" fill="#4DB6AC"/><text x="19" y="25" text-anchor="middle" font-size="17" font-weight="600" fill="white" font-family="system-ui">D</text></svg></div>
+          <div class="app-info">
+            <div class="app-name">Discord</div>
+            <div class="app-bar-wrap"><div class="app-bar" style="width:20%"></div></div>
+          </div>
+          <div class="app-time">3时46分</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 设置页 -->
+<div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+  <div class="mode-label">⚙️ 设置页 · 欢迎页</div>
+  <div style="display:flex; flex-direction:column; gap:20px;">
+
+    <!-- 设置页 -->
+    <div class="window window-light" style="height:auto; min-height:360px;">
+      <div class="titlebar">
+        <div class="titlebar-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="rgba(0,0,0,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="titlebar-title" style="flex:1;">设置</div>
+        <div class="titlebar-btn close-hover">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1L9 9M9 1L1 9" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="content" style="overflow:visible;">
+        <div class="section">
+          <div class="section-title">启动 &amp; 运行</div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-name">开机自动启动</div>
+              <div class="setting-desc">登录后自动在后台运行，不显示窗口</div>
+            </div>
+            <div class="toggle on"><div class="slider"></div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">数据 &amp; 隐私</div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-name">数据存储位置</div>
+              <div class="setting-desc">%APPDATA%\AppTimeTracker\usage.db</div>
+            </div>
+            <div class="btn-ghost">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              打开
+            </div>
+          </div>
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-name">数据保留时长</div>
+              <div class="setting-desc">自动清理 35 天前的记录</div>
+            </div>
+            <div class="badge">35天</div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">关于</div>
+          <div class="about-card">
+            <div style="width:46px;height:46px;">
+              <svg viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg">
+                <rect width="46" height="46" rx="11" fill="#0067C0"/>
+                <rect x="10" y="12" width="26" height="5" rx="2.5" fill="rgba(255,255,255,0.9)"/>
+                <rect x="10" y="21" width="18" height="5" rx="2.5" fill="rgba(255,255,255,0.7)"/>
+                <rect x="10" y="30" width="12" height="5" rx="2.5" fill="rgba(255,255,255,0.5)"/>
+              </svg>
+            </div>
+            <div class="about-info">
+              <div class="about-name">应用时长</div>
+              <div class="about-ver">版本 1.0.0</div>
+              <div class="about-desc">轻量、离线、不联网 · 完全保护隐私</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 欢迎页（精简） -->
+    <div class="window window-dark" style="height:auto; min-height:300px;">
+      <div class="titlebar">
+        <div class="titlebar-title" style="flex:1;">应用时长</div>
+        <div class="titlebar-btn close-hover">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 1L9 9M9 1L1 9" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+      <div class="welcome-body">
+        <div style="width:60px;height:60px;">
+          <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+            <rect width="60" height="60" rx="15" fill="#60CDFF"/>
+            <rect x="13" y="16" width="34" height="7" rx="3.5" fill="rgba(0,0,0,0.7)"/>
+            <rect x="13" y="27" width="24" height="7" rx="3.5" fill="rgba(0,0,0,0.5)"/>
+            <rect x="13" y="38" width="15" height="7" rx="3.5" fill="rgba(0,0,0,0.35)"/>
+          </svg>
+        </div>
+        <div class="welcome-title">欢迎使用 应用时长</div>
+        <div class="privacy-card">
+          <div class="privacy-header">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.35C16.5 22.15 20 17.25 20 12V6l-8-4z" fill="#4CAF50"/><path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            隐私承诺
+          </div>
+          <ul class="privacy-list">
+            <li>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="8" r="7" fill="#4CAF50"/><path d="M5 8l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              完全离线，<strong>不联网</strong>，不上传任何数据
+            </li>
+            <li>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><circle cx="8" cy="8" r="7" fill="#4CAF50"/><path d="M5 8l2 2 4-4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              所有记录仅保存在你的本地电脑
+            </li>
+          </ul>
+        </div>
+        <button class="btn-primary">开始使用</button>
+        <div class="welcome-hint">关闭窗口后软件仍在后台运行</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
